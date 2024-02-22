@@ -1,5 +1,5 @@
-## Partie 2: Ajouter un nouveau voisin
-Dans cette section, nous allons ajouter un nouveau fragment qui permettra de créer un nouveau voisin et l'ajouter dans la liste. 
+## Partie 2: Interfaces d'ajout et de détails 
+Dans cette section, nous allons ajouter deux nouveaux fragments permettant d'ajouter un nouveau voisin et voir les détails d'un voisin existant. 
 
 ### 1. Créer un nouveau fragment 
 
@@ -35,19 +35,10 @@ Dans cette section, nous allons ajouter un nouveau fragment qui permettra de cr�
 </com.google.android.material.textfield.TextInputLayout>
 
 ```
-
-> Dans cet exemple 
-
->> com.google.android.material.textfield.TextInputLayout permet de définir un layout qui encapsule le champ de texte; il permet entre autre de gérer le floating label. 
-
->> com.google.android.material.textfield.TextInputEditText
-est le champ de texte qui permet à l'utilisateur de saisir le texte. 
  
-3. Associer le layout au fragment
+3. Associer le layout au fragment en utilisant le viewbinding
 
-> Utiliser le ViewBinding
-
-4. Gérer l'action sur le bouton enregistre. Quand l'utilisateur clique sur le bouton enregistrer :
+4. Gérer l'action sur le bouton ```enregistrer```. Quand l'utilisateur clique sur le bouton enregistrer :
     - Récupérer les valeurs de champs 
     - Créer un nouvel objet Neighbor 
     - Ajouter le nouveau voisin dans la liste
@@ -64,9 +55,9 @@ est le champ de texte qui permet à l'utilisateur de saisir le texte.
     
     - Le téléphone doit être valide (commencant par 06 ou 07 et doit avoir 10 charactères) -- (afficher une erreur sous le champ téléphone indiquant à l'utilisateur que le format doit être 0X XX XX XX XX XX)
 
-    - Le champ bio A propos de moi doit autoriser au maximum 30 charactères 
+    - Le champ bio A propos de moi doit autoriser au maximum 100 charactères 
 
-    - Les champs Image et Website doivent être des liens valides
+    - Les champs Image et Website doivent être des URLs valides
 
 >> Bonus, quand l'utilisateur rempli le champ Image avec un lien valide, afficher automatiquement un visuel de l'image à la place de l'image par défaut tout en haut. 
 
@@ -75,8 +66,17 @@ est le champ de texte qui permet à l'utilisateur de saisir le texte.
 C'est par ici, https://material.io/develop/android/components/text-fields.
 </details>
 
-### 2. Lancer le fragment ``AddNeighborFragment``
-Dans cette section, nous allons modifier l'activité ``MainActivity`` afin de faciliter la gestion du nouveau fragment. 
+### ViewModel 
+
+1. Créer un ViewModel ``ÀddNeighborViewModel````
+
+2. Ajouter une méthode ```save``` dans le VM permettant de sauvegarder un nouveau voisin 
+
+3. Associer le VM au fragment
+
+### Gérer la navigation
+Dans cette section, nous allons modifier l'activité ``MainActivity`` afin de faciliter la gestion du nouveau fragment.
+
 1. Modifier la layout de l'activité principale pour y ajouter un bouton floatant (floating button)
 
 ```xml
@@ -95,14 +95,9 @@ Dans cette section, nous allons modifier l'activité ``MainActivity`` afin de fa
 - Tester
 
 ### Gestion de la toolbar 
-Dans cette section, nous allons gérer le thème et styles de l'application ainsi que la toolbar de navigation. 
+Dans une application Android, une toolbar permet gérer la barre d'action. Une barre d'action contient le titre des écrans, ou les options de navigations. 
 
-En effet, jusqu'ici notre application n'affiche pas le titre des écrans ou les options de navigation. Nous allons réctifier cela en ajoutant une toolbar. 
-
-### Ajouter une toolbar 
-Dans une application Android, une toolbar permet gérer la barre d'action modélisation le titre des écrans, ou les options de navigations. 
-
-1. Modifiez le layout de l'activité principal pour y ajouter une toolbar. 
+1. Modifier le layout de l'activité principal pour y ajouter une toolbar. 
 > La toolbar doit se positionner tout en haut de l'écran et les autres vues doivent se positionner sous la toolbar. 
 
 ```xml
@@ -126,20 +121,14 @@ Dans une application Android, une toolbar permet gérer la barre d'action modél
         app:layout_scrollFlags="scroll|enterAlways"
         app:title="@string/app_name" />
 
-    <FrameLayout
-        android:id="@+id/fragment_container"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar_activity_add" />
+    .....
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
 ```
 
 2. Modifier l'activité pour qu'elle utilise la toolbar pour gérer la navigation 
+
 ```kotlin
 ...
 override fun onCreate(savedInstanceState: Bundle?) {
@@ -150,7 +139,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 ...
 ```
 
-3. Ajouter une interface ``NavigationListener`` dans le package principal du projet, elle sera utiliser pour faciliter la communication entre l'activité et les fragments.
+3. Ajouter une interface ``NavigationListener`` dans le package principal du projet, elle sera utilisée pour faciliter la communication entre l'activité et les fragments.
 
 ```kotlin
     interface NavigationListener {
@@ -158,7 +147,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
     }
 ```
 
-3. Ajouter une fonction setTitle dans l'interface ``NavigationListener`` permettant aux fragments de modifier le titre de la toolbar
+4. Ajouter une fonction ``setTitle`` dans l'interface ``NavigationListener`` permettant aux fragments de modifier le titre de la toolbar
 
 ```kotlin
 interface NavigationListener {
@@ -167,28 +156,43 @@ interface NavigationListener {
 }
 ```
 
-4. Ajouter une fonction dans `NavigationListener` permettant de fermer un fragment 
+5. Ajouter une fonction dans `NavigationListener` permettant de fermer un fragment 
 
 
-4. Modifiez l'activité pour changer le titre de la toolbar à l'appel de la fonction ``updateTitle``
+6. Modifiez l'activité pour changer le titre de la toolbar à l'appel de la fonction ``updateTitle``
 
 ```kotlin
 ...
 override fun updateTitle(title: Int) {
-    toolbar.setTitle(title)
+    binding.toolbar.setTitle(title)
 }
 ...
 
 ```
 
-5. Modifiez les fragments ``ListNeighborsFragment`` et ``AddNeighborFragment`` pour afficher le bon titre dans la toolbar : 
-    - ListNeighborsFragment affiche ``Liste des voisins``
+7. Modifier les fragments ``ListNeighborsFragment`` et ``AddNeighborFragment`` pour afficher le bon titre dans la toolbar : 
+
+- ListNeighborsFragment affiche ``Liste des voisins`` comme dans l'exemple
+
 ```kotlin
 (activity as? NavigationListener)?.let { 
                 it.updateTitle(R.string.fragment_list_title)
             }
 ```
-    - AddNeighborFragment affiche ``Nouveau voisin``
 
-## Partie 3: Ajouter un fragment permettant d'ajouter un nouveau voisin 
+ - AddNeighborFragment affiche ``Nouveau voisin``
+
+
+### Ajouter une vue peremttant d'afficher les détails d'un voisin 
+
+1. Créer le fragment et le view Model 
+
+2. Faire passer un fragment selectionné de la liste des voisins à l'écran de détail
+
+3. Adapter le titre de la toolbar 
+
+4. Ajouter les actions (liker, favoris) dans la vue de détail 
+
+
+## Partie 3: Gérer la persistance avec Room
 [Base de données](part3.md)

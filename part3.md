@@ -1,29 +1,11 @@
 ## Partie 3: Gérer la persistance avec Room 
-Dans ce TP, nous allons améliorer l'application Entre Voisin développée dans les parties 1 et 2. 
-
-Jusqu'ici les données de l'application étaient gérées en mémoire, par conséquent quand on relance l'application les données sont réinitialisées. 
-
-Nous allons utiliser une base de données pour gérer la persistance afin que les données persistent au redemarrage de l'application. 
+Dans cette section, nous allons utiliser une base de données pour gérer la persistance afin que les données persistent au redemarrage de l'application. 
 
 Le schéma suivant représente l'architecture du code de l'application 
 ![Architecture](/architecture.png "Nouveau voisin")
 
 ### Mise en place de la base de données avec Room
-
-Room est un ORM (Object Relational Mapper) qui permet de manipuler les tables d'une base de données SQLite en utilisant uniquement des classes, interfaces et des méthodes. Pour plus d'informations, consultez la documentation ici https://developer.android.com/training/data-storage/room. 
-
-Composants Room : 
-**Entity** : Classe permettant de modéliser un objet métier, cette classe sera représentée dans la base de données comme une table. 
-Concrètement : 
-- Le nom de l'entité représente le nom de la classe
-- Les attributs de l'entité représentent les colonnes de la table 
-- Les instances de l'entité représentent les lignes de la table. 
-
-**Database** : Classe qui modélise la base de données sous forme d'objets. 
-
-**DAO** : Interface permettant de modéliser les opérations à effectuer sur les entités. Il existe généralement autant de DAO que d'entités.
-
-### 1. Dépendances 
+1. Dépendances 
 Modifier le fichier ```build.gradle.kts``` du module de l'application.
 
 ```gradle
@@ -38,11 +20,9 @@ Modifier le fichier ```build.gradle.kts``` du module de l'application.
 ```
 > Ne pas oublier de resynchroniser gradle
 
-### Mise en place de la base de données
+2. Dans le package ``dal`` ajouter un package ``local`` puis ajouter les sous-package suivants : ``entities``, ``daos``
 
-1. Dans le package ``dal`` ajouter un package ``local`` puis ajouter les sous-package suivants : ``entities``, ``daos``
-
-2. Dans le package ``local``, ajouter une classe ``NeighborEntity`` qui permet de modéliser un objet ``neighbor`` dans la base de données
+3. Dans le package ``local``, ajouter une classe ``NeighborEntity`` qui permet de modéliser un objet ``neighbor`` dans la base de données
 
 ```Kotlin
 @Entity(tableName = "neighbors")
@@ -58,16 +38,10 @@ class NeighborEntity(
     var webSite: String? = null,
 )
 ```
-> Observez bien les variables: 
-- id est un val et c'est la clef primaire
-- address est un val car on ne veut pas qu'on puisse modifier l'adresse d'un voisin; c'est bête mais vous avez compris l'idée
-- website peut être null, tous les voisins ne sont pas des geeks. 
-- favorite est une variable non obligatoire, car elle vaut false par défaut et elle est modifiable car on peut ajouter ou enlever un voisin en favori à volonté
-
 
 3. Dans le package ``daos``, Ajouter une interface ``NeighborDao``.
 
-4. Modifiez l'interface ```NeighborDao``` pour y ajouter une méthode pour récupérer la liste des neighbors dans la base de données 
+4. Modifier l'interface ```NeighborDao``` pour y ajouter une méthode pour récupérer la liste des neighbors dans la base de données 
 
 ```Kotlin
 @Dao
@@ -77,9 +51,7 @@ interface NeighborDao {
 }
 ```
 
-### 4. Modéliser la base de données Room
-
-- Dans le package ```local```, ajouter une classe ```NeighborDataBase``` permettant de modéliser la base de données. 
+5. Dans le package ```local```, ajouter une classe ```NeighborDataBase``` permettant de modéliser la base de données. 
 
 ```Kotlin
 @Database(
@@ -108,7 +80,9 @@ abstract class NeighborDataBase : RoomDatabase() {
 
 ```
 
-> Pour mieux comprendre : 
+<details>
+
+<summary> Pour mieux comprendre : </summary>
 - L'annotation ```@Database``` permet de définir les entités et la version de la base de données. 
 
 - Une base de données relationnelle peut contenir plusieurs tables, par conséquent l'attribut entities de l'annotation permet de définir les entités gérées par la base de données. 
@@ -123,10 +97,12 @@ abstract class NeighborDataBase : RoomDatabase() {
 
 - fallbackToDestructiveMigration() indique à Room de supprimer la base de données et la recréer quand le modèle de données change. 
 
-### 5. Implémenter une nouvelle source de données 
+</details>
+
+### Implémenter une nouvelle source de données 
 Dans cette section, nous allons définir une classe qui permet d'exposer les données de la base de données selon le protocole défini par l'interface ```NeighborService```.
 
-- Dans le package ```local```, ajouter une classe ```LocalNeighbor``` qui implémente l'interface ```NeighborService```
+1. Dans le package ```local```, ajouter une classe ```LocalNeighbor``` qui implémente l'interface ```NeighborService```
 
 ```Kotlin
 
@@ -153,18 +129,25 @@ class LocalNeighbor(application: Application) : NeighborDatasource {
 
 ```
 
-> Petite analyse 
+<details>
+
+<summary>Petite analyse </summary>
 
 - Cette classe implémente ```NeighborService``` qui l'oblige à avoir le même comportement que la classe ```InMemoryNeighbor```. Ainsi, la seule différence entre les deux sources de données est le mode de persistance. 
 
 - Ici on a utilisé un ```MediatorLiveData``` qui nous permet d'observer les changements sur la base de données et appliquer des modifications sur les données renvoyées par la BDD avant de les afficher à l'utilisateur. 
 
+</details>
+
 ## Convertion de données 
+<details>
+<summary>Explications</summary>
 A ce stade, la base de données à son modèle de données qui est différente de celle de la vue. Plus tard, quand on va rajouter des web services, eux aussi vont avoir leur propre modèle de données. Un des principes du clean architecture consiste à utiliser un modèle dédié pour chaque couche et de définir des routines de conversion quand il faut faire passer des données d'une couche à l'autre. 
+</details>
 
-- Dans le package ```dal```, ajouter un nouveau package ```utils``` et dans ce nouveau package ajouter un fichier Kotlin ```NeighborMapper.kt```. 
+1. Dans le package ```dal```, ajouter un nouveau package ```utils``` puis un fichier Kotlin ```NeighborMapper.kt```. 
 
-- Créer une fonction d'extension dans ```NeighborMapper.kt``` permettant de convertir une instance de ```NeighborEntity``` en ```Neighbor```
+2. Créer une fonction d'extension dans ```NeighborMapper.kt``` permettant de convertir une instance de ```NeighborEntity``` en ```Neighbor```
 
 > Rappelez-vous, les fonctions d'extension permettent d'implémenter une fonction dans une classe sans la surcharger. 
 
@@ -185,8 +168,6 @@ fun NeighborEntity.toNeighbor() = Neighbor(
 La data source ```LocalNeighbor``` a besoin d'une instance de l'application pour s'initialiser; en fait c'est la base de données qui en a besoin. 
 Pour cela, nous allons modifier le repository pour qu'elle accepte en paramètre une instance d'application. 
 
-> Ce n'est pas très propre de faire cela, on pourrait faire mieux en utilisant des libraires d'injection de dépendances comme Hilt (https://developer.android.com/training/dependency-injection/hilt-android). Pour les plus curieux, ce sera votre point bonus. 
-
 1. Modifier le repository
 
 ```Kotlin
@@ -197,26 +178,21 @@ class NeighborRepository private constructor(application: Application) {
         dataSource = LocalNeighbor(application)
     }
 
-    // Méthode qui retourne la liste des voisins
-    fun getNeighbours(): LiveData<List<Neighbor>> = dataSource.neighbours
-
-    fun delete(neighbor: Neighbor) = dataSource.deleteNeighbour(neighbor)
-
     companion object {
-        private var instance: NeighborRepository? = null
 
-        // On crée un méthode qui retourne l'instance courante du repository si elle existe ou en crée une nouvelle sinon
-        fun getInstance(application: Application): NeighborRepository {
-            if (instance == null) {
-                instance = NeighborRepository(application)
+        @Volatile private var instance: NeighborRepository? = null
+
+        fun getInstance(application: Application) =
+            instance ?: synchronized(this) { 
+                instance ?: NeighborRepository(application).also { instance = it }
             }
-            return instance!!
-        }
     }
 }
 ```
 
-> On essaie de comprendre ? 
+<details>
+
+<summary>On essaie de comprendre ? </summary>
 
 - On veut maitriser la création du repositoty, on met son constructeur en private.
 
@@ -224,9 +200,13 @@ class NeighborRepository private constructor(application: Application) {
 
 - Finalement, on change de source de données; on remplace ```InMemoryNeighbor``` par ```LocalNeighbor``` 
 
+</details>
+
 ## Mise en place de l'injection de dépendance
 Une des bonnes pratiques dans la clean architecture est l'utilisation de l'injection de dépendance. Ce mécanisme permet de gérer la création des instances d'objets partagés comme les repositories. 
-Pour les plus curieux, vous pouvez utiliser des librairies spécialiées (comme HILT) sinon on va créer un injecteur de dépendance (fait maison :) ). 
+
+Nous allons implémenter un mécanisme d'injection de dépendance mais vous pouvez utiliser des librairies spécialiées (comme HILT) qui le font plus proprement. 
+
 
 1. Dans le package principale, ajouter un package ``di``
 
@@ -246,7 +226,7 @@ object Injection {
 }
 ```
 
-3. Modifier l'activité pour initialiser l'injecteur au lancement de l'activité 
+3. Modifier l'activité pour initialiser l'injecteur
 
 ```kotlin
 
@@ -259,14 +239,11 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 4. Modifier les VMs pour récurer l'instance du repository en passant par l'injecteur 
 
-5. Compiler et tester. 
 
-> Que remarquez-vous ? Pourquoi ? 
+5. Ajouter les voisins de tests dans la BDD
 
-## Ajouter des données dans la BDD
 Afin d'éviter d'avoir une base de données vide, nous allons modifier la classe qui gère la base de données pour y insérer des données de tests à la création de la base de données. 
 
-- Ajouter un callback lors de la l'instanciation de la BDD pour intercepter l'événement de création de la BDD. 
 ```Kotlin
 fun getDataBase(application: Application): NeighborDataBase {
             if (instance == null) {
@@ -294,11 +271,11 @@ fun getDataBase(application: Application): NeighborDataBase {
             }
         }
 ```
-> Compilez et testez
+
+6. Compiler et tester
 
 
 ## A vous de jouer
-Maintenant vous allez coder les amis :) 
 
 1. Modifier l'écran d'ajout pour sauvegarder les nouveaux voisins dans la base de données
 
@@ -306,13 +283,9 @@ Maintenant vous allez coder les amis :)
 
 > ATTENTION, vous n'avez pas besoin de raffraichir la liste, elle sera mise à jour automatiquement via le live Data. 
 
-
 3. Ajouter un menu dans la toolbar permettant à l'utilisateur de choisir la source de données à utiliser : 
 - Non persistent --> InMemory
 - Persistent --> Local
 
-4. Ajouter un menu dans la toolbar de la liste permettant de filtrer la liste en fonction des critères (tous, favoris, liked)
+4. Ajouter un menu dans la toolbar permettant de filtrer la liste en fonction des critères (tous, favoris, liked). Ce menu doit s'afficher uniquement dans le fragment de la liste 
 
-5. Ajouter une vue pour afficher le détail d'un voisin. 
-
-5. Ajouter un bouton dans la vue de détail permettant d'ajouter un voisi en favori.
