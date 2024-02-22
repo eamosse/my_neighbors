@@ -1,5 +1,3 @@
-# Application de mise en relation entre voisins
-
 ## Partie 2: Ajouter un nouveau voisin
 Dans cette section, nous allons ajouter un nouveau fragment qui permettra de créer un nouveau voisin et l'ajouter dans la liste. 
 
@@ -47,10 +45,12 @@ est le champ de texte qui permet à l'utilisateur de saisir le texte.
  
 3. Associer le layout au fragment
 
+> Utiliser le ViewBinding
+
 4. Gérer l'action sur le bouton enregistre. Quand l'utilisateur clique sur le bouton enregistrer :
     - Récupérer les valeurs de champs 
     - Créer un nouvel objet Neighbor 
-    - Ajouter l'objet dans la liste des Neighbors 
+    - Ajouter le nouveau voisin dans la liste
 
 > Contraintes 
 
@@ -77,38 +77,7 @@ C'est par ici, https://material.io/develop/android/components/text-fields.
 
 ### 2. Lancer le fragment ``AddNeighborFragment``
 Dans cette section, nous allons modifier l'activité ``MainActivity`` afin de faciliter la gestion du nouveau fragment. 
-
-- Ajouter une interface ``NavigationListener`` dans le package principal du projet. 
-
-```kotlin
-    interface NavigationListener {
-        fun showFragment(fragment: Fragment)
-    }
-```
-
-- Modifiez l'activité ``MainActivity`` pour qu'elle implémente l'interface ``NavigationListener``
-
-- Déplacez le code de la méthode ``changeFragment`` dans la nouvelle méthode ``showFragment`` puis supprimer la méthode ``changeFragment``
-
-``` kotlin
-class MainActivity : AppCompatActivity(), NavigationListener {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_main)
-        showFragment(ListNeighborsFragment())
-    }
-
-    override fun showFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction().apply {
-            replace(R.id.fragment_container, fragment)
-            addToBackStack(null)
-        }.commit()
-    }
-}
-```
-
-- Modifiez la layout du fragment liste voisins en y ajoutant un bouton floatant (floating button)
+1. Modifier la layout de l'activité principale pour y ajouter un bouton floatant (floating button)
 
 ```xml
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -121,22 +90,11 @@ class MainActivity : AppCompatActivity(), NavigationListener {
         app:layout_constraintEnd_toEndOf="parent" />
 ```
 
-- Modifiez le fragment de la liste des voisins pour instercepter le click sur le bouton
+2. Modifier l'actitivé pour intercepter le click sur le bouton flottant et lancer le fragment ``AddNeighborFragment``
 
+- Tester
 
-> Au clique sur le bouton, afficher le fragment ``AddNeighborFragment``
-
-```Kotlin
-addNeighbor.setOnClickListener { 
-            (activity as? NavigationListener)?.let { 
-                it.showFragment(AddNeighborFragment())
-            }
-        }
-```
-
-- Compilez et testez
-
-## Partie 3 : Gestion de la toolbar 
+### Gestion de la toolbar 
 Dans cette section, nous allons gérer le thème et styles de l'application ainsi que la toolbar de navigation. 
 
 En effet, jusqu'ici notre application n'affiche pas le titre des écrans ou les options de navigation. Nous allons réctifier cela en ajoutant une toolbar. 
@@ -144,7 +102,7 @@ En effet, jusqu'ici notre application n'affiche pas le titre des écrans ou les 
 ### Ajouter une toolbar 
 Dans une application Android, une toolbar permet gérer la barre d'action modélisation le titre des écrans, ou les options de navigations. 
 
-- Modifiez le layout de l'activité principal pour y ajouter une toolbar. 
+1. Modifiez le layout de l'activité principal pour y ajouter une toolbar. 
 > La toolbar doit se positionner tout en haut de l'écran et les autres vues doivent se positionner sous la toolbar. 
 
 ```xml
@@ -181,32 +139,38 @@ Dans une application Android, une toolbar permet gérer la barre d'action modél
 
 ```
 
-- Modifiez l'activité pour qu'elle utilise la toolbar pour gérer la navigation 
+2. Modifier l'activité pour qu'elle utilise la toolbar pour gérer la navigation 
 ```kotlin
 ...
-private lateinit var toolbar: Toolbar
 override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-
-    setContentView(R.layout.activity_main)
-    toolbar = findViewById(R.id.toolbar)
-    setSupportActionBar(toolbar)
-    
-    showFragment(ListNeighborsFragment())
+    ...
+    setSupportActionBar(binding.toolbar)
+    ...
 }
 ...
 ```
 
-- Ajoutez une fonction setTitle dans l'interface ``NavigationListener`` permettant aux fragments de modifier le titre de la toolbar
+3. Ajouter une interface ``NavigationListener`` dans le package principal du projet, elle sera utiliser pour faciliter la communication entre l'activité et les fragments.
+
+```kotlin
+    interface NavigationListener {
+        fun changeFragment(fragment: Fragment)
+    }
+```
+
+3. Ajouter une fonction setTitle dans l'interface ``NavigationListener`` permettant aux fragments de modifier le titre de la toolbar
 
 ```kotlin
 interface NavigationListener {
-    fun showFragment(fragment: Fragment)
+    ...
     fun updateTitle(@StringRes title: Int)
 }
 ```
 
-- Modifiez l'activité pour changer le titre de la toolbar à l'appel de la fonction ``updateTitle``
+4. Ajouter une fonction dans `NavigationListener` permettant de fermer un fragment 
+
+
+4. Modifiez l'activité pour changer le titre de la toolbar à l'appel de la fonction ``updateTitle``
 
 ```kotlin
 ...
@@ -217,45 +181,14 @@ override fun updateTitle(title: Int) {
 
 ```
 
-- Modifiez les fragments ``ListNeighborsFragment`` et ``AddNeighborFragment`` pour afficher le bon titre dans la toolbar : 
-    - ListNeighborsFragment --> Liste des voisins
-    - AddNeighborFragment --> Nouveau voisin
+5. Modifiez les fragments ``ListNeighborsFragment`` et ``AddNeighborFragment`` pour afficher le bon titre dans la toolbar : 
+    - ListNeighborsFragment affiche ``Liste des voisins``
+```kotlin
+(activity as? NavigationListener)?.let { 
+                it.updateTitle(R.string.fragment_list_title)
+            }
+```
+    - AddNeighborFragment affiche ``Nouveau voisin``
 
-- Exécutez et vérifier que tout va bien 
-
-- Compilez et testez 
-
-## Partie 4 : Internationalisation de l'application
-On va traduire notre application, initialement en français, en anglais. 
-
-- Dans le pannel de gauche, passer sur le mode Android (si ce n'est pas déjà le cas)
-
-- Faites clique droit sur le dossier values puis ``new > Values Resource File ``
-
-- Dans la fenêtre qui s'affiche, ``entrez strings`` dans le champ file Name
-
-- Dans la section ``Available qualifiers``, cliquez Locale puis cliquez sur le bouton ``>>`` pour le selectionner
-
-- Sous Language, selectionnez ``en`` puis cliquez sur ``Ok``
-
-> Une fois remplie, le formulaire devrait ressembler à 
-
-![Add language](/language.png "Add language")
-
-> Si vous déployez le dossier strings dans values, vous devriez voir deux fichiers ``strings.xml`` dont l'un avec ``en entre parenthèse``
-
->> strings.xml contient les textes par défaut de l'application (en français)
-
->> strings.xml (en) contient les textes en anglais (il est vide pour l'instant)
-
-- Copiez tout le contenu du fichier strings.xml et collez le dans le fichier strings.xml (en)
-
-- Traduisez les valeurs de chaque item en anglais 
-
-- Allez dans les settings du téléphone (ou de l'émulateur) puis changez la langue du français à l'anglais, ou inversement
-
-- Exécutez le projet, normalement les textes sont traduits en fonction de la langue du téléphone
-
-> Si vous utilisez une langue non supportée (ex. Espagnol), les textes de l'application seront en français
-
-> Vous pouvez ajouter autant de langues que vous souhaitez en répétant la même démarche. 
+## Partie 3: Ajouter un fragment permettant d'ajouter un nouveau voisin 
+[Base de données](part3.md)
